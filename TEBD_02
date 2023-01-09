@@ -1,0 +1,21 @@
+
+import qiskit
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit import execute, Aer
+
+# for create a quantum circuit with one qubit and one classical bit
+qr = QuantumRegister(1)
+cr = ClassicalRegister(1)
+circuit = QuantumCircuit(qr, cr)
+
+# I'm trying with time-evolving block decimation (TEBD) algorithm
+circuit.x(qr[0])  # Apply an X gate
+circuit.measure(qr, cr)
+
+# Execute the quantum circuit on a quantum simulator
+backend = Aer.get_backend('qasm_simulator')
+job = execute(circuit, backend)
+result = job.result()
+
+# Print the measurement result
+print(result.get_backend())
