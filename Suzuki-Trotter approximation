@@ -1,0 +1,102 @@
+import numpy as np
+import qiskit
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import Statevector
+from qiskit.providers.aer import QasmSimulator
+from qiskit.providers.aer.noise import NoiseModel
+
+# Set up the lattice gauge theory Hamiltonian
+N = 5  # number of qubits in each dimension
+H = np.zeros((2 ** (2 * N), 2 ** (2 * N)))
+for i in range(N):
+    for j in range(N):
+        x_idx = i + j * N
+        y_idx = N * N + i + j * N
+        H[x_idx, y_idx] = 1
+        H[y_idx, x_idx] = 1
+        if i < N - 1:
+            x_idx_1 = (i + 1) + j * N
+            y_idx_1 = N * N + (i + 1) + j * N
+            H[x_idx, x_idx_1] = 1
+            H[x_idx_1, x_idx] = 1
+            H[y_idx, y_idx_1] = 1
+            H[y_idx_1, y_idx] = 1
+        if j < N - 1:
+            x_idx_2 = i + (j + 1) * N
+            y_idx_2 = N * N + i + (j + 1) * N
+            H[x_idx, x_idx_2] = 1
+            H[x_idx_2, x_idx] = 1
+            H[y_idx, y_idx_2] = 1
+            H[y_idx_2, y_idx] = 1
+
+# Choose an initial state for the qubits
+psi0 = Statevector.from_label('0' * (2 * N * N))
+
+# Define the time steps for the simulation
+dt = 0.1
+times = [i * dt for i in range(50)]
+
+# Define the Trotterization order
+order = 2
+
+# Implement the Suzuki-Trotter approximation for simulating the dynamics
+simulator = QasmSimulator()
+noise_model = NoiseModel.from_backend(qiskit.providers.aer.backends.ibmq_vigo)
+result = simulator.run(circuits, noise_model=noise_model).result()
+psi = psi0
+for t in times:
+    U = np.exp(-1j * H * t / 2**order)
+    for k in range(order):
+        for i in range(N):
+            for j in range(N):
+                x_idx = i + j * N
+                y_idx = N * N + i + j * N
+                if i < N - 1:
+                    x_idx_1 = (i + 1) + j * N
+                    U = np.dot(U, np.kron(np.eye(2 ** x_idx), np.dot(np.kron(qiskit.quantum_info.Operator(U[:, x_idx_1]), np.eye(2 ** (y_idx -
+
+#Define the circuits for each time step
+circuits = []
+for t in times:
+U = np.exp(-1j * H * t / 2**order)
+for k in range(order):
+for i in range(N):
+for j in range(N):
+x_idx = i + j * N
+y_idx = N * N + i + j * N
+if i < N - 1:
+x_idx_1 = (i + 1) + j * N
+circuit = QuantumCircuit(2 * N)
+circuit.append(qiskit.quantum_info.Operator(U[:, x_idx_1]).to_instruction(), [x_idx, y_idx])
+circuits.append(circuit)
+if j < N - 1:
+x_idx_2 = i + (j + 1) * N
+circuit = QuantumCircuit(2 * N)
+circuit.append(qiskit.quantum_info.Operator(U[:, x_idx_2]).to_instruction(), [x_idx, y_idx])
+circuits.append(circuit)
+
+#Simulate the circuits
+result = simulator.run(circuits, noise_model=noise_model).result()
+
+#Extract the final state vector from the result
+psi = psi0
+for t in times:
+U = np.exp(-1j * H * t / 2**order)
+for k in range(order):
+for i in range(N):
+for j in range(N):
+x_idx = i + j * N
+y_idx = N * N + i + j * N
+if i < N - 1:
+x_idx_1 = (i + 1) + j * N
+psi = qiskit.quantum_info.Operator(U[:, x_idx_1]).data.dot(psi)
+if j < N - 1:
+x_idx_2 = i + (j + 1) * N
+psi = qiskit.quantum_info.Operator(U[:, x_idx_2]).data.dot(psi)
+psi = Statevector(psi)
+
+#Plot the results
+import matplotlib.pyplot as plt
+probabilities = psi.probabilities()
+plt.plot(range(len(probabilities)), probabilities)
+plt.show()
